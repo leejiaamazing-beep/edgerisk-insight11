@@ -1,0 +1,10 @@
+{
+  // ESA Pages 配置文件
+  "build": {
+    "command": "npm run build",
+    "output": "dist"
+  },
+  "assets": {
+    "directory": "dist"
+  }
+}
