@@ -4,7 +4,7 @@ import { ControlPanel } from './components/ControlPanel';
 import { Dashboard } from './components/Dashboard';
 import type { DashboardData, AnalysisResult } from './types';
 import { parse } from 'marked';
-import { Lightbulb, Download } from './components/Icons';
+import { Download } from './components/Icons';
 
 const API_BASE = 'http://localhost:8000';
 
@@ -26,11 +26,11 @@ const MOCK_DASHBOARD_DATA: DashboardData = {
     { branch_name: '延安分行', npl_ratio: 2.5 }
   ],
   asset_quality_distribution: [
-    { category: '正常', value_wan: 110000, percentage: 88.0 },
-    { category: '关注', value_wan: 7000, percentage: 5.6 },
-    { category: '次级', value_wan: 3000, percentage: 2.4 },
-    { category: '可疑', value_wan: 3000, percentage: 2.4 },
-    { category: '损失', value_wan: 2000, percentage: 1.6 }
+    { category: '正常', value: 110000, value_wan: 110000, percentage: 88.0 },
+    { category: '关注', value: 7000, value_wan: 7000, percentage: 5.6 },
+    { category: '次级', value: 3000, value_wan: 3000, percentage: 2.4 },
+    { category: '可疑', value: 3000, value_wan: 3000, percentage: 2.4 },
+    { category: '损失', value: 2000, value_wan: 2000, percentage: 1.6 }
   ],
   product_npl_rank: [
     { product_name: '个人经营贷', npl_ratio: 5.2 },

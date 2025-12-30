@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RefreshCw, FileText, HelpCircle, BarChart2, FileSpreadsheet, Calendar, DollarSign, User, Send, Sparkles } from './Icons';
+import { FileText, HelpCircle, BarChart2, FileSpreadsheet, Calendar, DollarSign, User, Send, Sparkles } from './Icons';
 
 interface ControlPanelProps {
     onAnalyze: (query: string) => void;
