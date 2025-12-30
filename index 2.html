@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>长策 - 智能风险分析平台</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    
+    <style>
+        /* --- 全新配色方案 (现代简洁专业风) --- */
+        :root {
+            --bg-color: #f8f9fa;
+            --panel-bg-color: #ffffff;
+            --primary-color: #0d6efd;
+            --primary-hover-color: #0b5ed7;
+            --secondary-text-color: #6c757d;
+            --text-color: #343a40;
+            --border-color: #e9ecef;
+            --brand-highlight-color: #007bff;
+            --shadow-light: 0 0.5rem 1rem rgba(0, 0, 0, 0.05);
+            --success-color: #22c55e;
+            --success-hover-color: #16a34a;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .main-container {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .control-panel {
+            width: 420px;
+            padding: 30px;
+            background-color: var(--panel-bg-color);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow-light);
+            flex-shrink: 0;
+            overflow-y: auto;
+        }
+
+        .display-panel {
+            flex-grow: 1;
+            padding: 30px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center; /* 垂直居中 */
+            position: relative; /* 用于背景效果 */
+        }
+        
+        /* --- Logo和标题区 --- */
+        .header-brand {
+            text-align: center; /* 居中 */
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header-brand .logo {
+            height: 40px; /* Logo尺寸 */
+            margin-bottom: 10px;
+        }
+
+        .header-brand h1 {
+            font-size: 24px;
+            color: var(--text-color);
+            margin: 0;
+            font-weight: 500;
+            white-space: nowrap;
+            display: flex; /* 使用flex布局让元素居中 */
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .header-brand .brand-name {
+            color: var(--brand-highlight-color);
+            font-weight: 700;
+            margin-right: 5px; /* 长策和后面文字的间距 */
+        }
+
+        /* --- 左侧指令区 --- */
+        .control-panel h2 {
+            font-size: 18px;
+            color: var(--text-color);
+            margin-top: 25px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        textarea#query-input {
+            width: 100%;
+            min-height: 120px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 15px;
+            box-sizing: border-box;
+            resize: vertical;
+            background-color: var(--panel-bg-color);
+            color: var(--text-color);
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        
+        textarea#query-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(13,110,253,.25);
+        }
+
+        button#analyze-btn {
+            display: block;
+            width: 100%;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            transition: background-color 0.2s, transform 0.2s;
+        }
+        
+        button#analyze-btn:hover {
+            background-color: var(--primary-hover-color);
+            transform: translateY(-1px);
+        }
+
+        button#analyze-btn:disabled {
+            background-color: #ced4da;
+            color: #ffffff;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* --- 建议问题 --- */
+        .suggestions-section {
+            margin-top: auto;
+            padding-top: 30px;
+        }
+        .suggestions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 10px;
+        }
+        .suggestion-item {
+            display: flex;
+            flex-direction: column; /* 图标和文字上下排列 */
+            align-items: center;
+            justify-content: center;
+            padding: 15px 10px; /* 增加内边距 */
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 13px;
+            color: var(--secondary-text-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            min-height: 80px; /* 最小高度，保证视觉统一 */
+        }
+        .suggestion-item:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+        }
+        .suggestion-item i {
+            margin-bottom: 8px; /* 图标和文字的间距 */
+            font-size: 20px; /* 调整图标大小 */
+            color: var(--primary-color);
+        }
+
+        .subtle-actions {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        .subtle-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            font-size: 13px;
+            color: var(--secondary-text-color);
+            background-color: transparent;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .subtle-btn:hover {
+            color: var(--primary-color);
+            background-color: var(--bg-color);
+            border-color: var(--border-color);
+        }
+        .subtle-btn i {
+            font-size: 16px;
+        }
+
+
+
+
+        /* --- 右侧展示区通用卡片样式 --- */
+        .result-card {
+            max-width: 900px;
+            width: 100%;
+            background: var(--panel-bg-color);
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-light);
+            margin-top: 25px;
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+            box-sizing: border-box;
+            position: relative; /* 用于灯泡位置 */
+        }
+
+        #dashboard-card {
+            display: block;
+            max-width: 1200px;
+            width: 100%;
+            margin-top: 25px;
+            padding: 25px;
+            background: var(--panel-bg-color);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-light);
+            box-sizing: border-box;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        #dashboard-card .dashboard-title {
+            font-size: 24px;
+            color: var(--primary-color);
+            margin-bottom: 25px;
+            text-align: center;
+            font-weight: 600;
+        }
+        .dashboard-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .dashboard-header .dashboard-title { text-align: left; margin: 0; }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .summary-item {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+        .summary-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .summary-item .label {
+            font-size: 15px;
+            color: var(--secondary-text-color);
+            margin-bottom: 10px;
+        }
+        .summary-item .value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-color);
+        }
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        .chart-container-item {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            height: 400px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .chart-container-item h3 {
+            font-size: 18px;
+            color: var(--text-color);
+            margin-top: 0;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: 600;
+        }
+        .echart-instance {
+            flex-grow: 1;
+            min-height: 200px;
+        }
+        .asset-quality-table-container {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+        .asset-quality-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .asset-quality-table th, .asset-quality-table td {
+            padding: 10px 15px;
+            border: 1px solid #dee2e6;
+            text-align: left;
+            font-size: 14px;
+        }
+        .asset-quality-table th {
+            background-color: #f1f3f5;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+        .asset-quality-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        .result-card:first-child {
+            margin-top: 0;
+        }
+
+        /* --- 欢迎卡片专属样式 --- */
+        .welcome-card {
+            text-align: center;
+            display: block;
+            padding: 40px;
+            overflow: hidden; /* 隐藏溢出背景元素 */
+        }
+        .welcome-card h2 {
+            font-size: 28px; /* 增大标题 */
+            color: var(--primary-color);
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        .welcome-card p {
+            font-size: 16px;
+            color: var(--secondary-text-color);
+            max-width: 600px;
+            margin: 0 auto 25px; /* 调整段落间距 */
+        }
+
+        /* 欢迎卡片中的灯泡图标 */
+        .welcome-lightbulb {
+            font-size: 50px; /* 灯泡图标大小 */
+            color: var(--brand-highlight-color);
+            margin-bottom: 20px;
+            animation: pulse 2s infinite ease-in-out; /* 脉冲动画 */
+            display: block;
+        }
+
+        /* --- 加载动画 --- */
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 50px auto;
+            display: none;
+        }
+
+        /* --- Markdown 内容渲染样式 --- */
+        #result-container h3 { 
+            font-size: 20px;
+            color: var(--primary-color);
+            margin-top: 1.5em; 
+            margin-bottom: 0.8em; 
+            border-bottom: 1px solid var(--border-color); 
+            padding-bottom: 0.5em; 
+            font-weight: 600;
+        }
+        #result-container ul, #result-container ol { padding-left: 2em; line-height: 1.8; margin-bottom: 1em; }
+        #result-container strong { color: var(--primary-color); font-weight: 700; }
+        #result-container p { margin-bottom: 1em; }
+
+        /* --- 表格样式优化 --- */
+        #result-container table { 
+            border-collapse: collapse; 
+            width: 100%; 
+            margin-top: 1.5em; 
+            margin-bottom: 1.5em;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        #result-container th, #result-container td { 
+            border: 1px solid var(--border-color); 
+            padding: 12px 15px;
+            text-align: left; 
+            font-size: 14px;
+        }
+        #result-container th { 
+            background-color: var(--primary-color); /* 表头使用主色 */
+            color: white; 
+            font-weight: 600; 
+            white-space: nowrap;
+        }
+        #result-container tr:nth-child(even) { background-color: var(--bg-color); }
+        #result-container tr:hover { background-color: rgba(13,110,253,0.05); }
+        
+        /* --- 图表和下载卡片 --- */
+        #chart-container h2, #download-container h2 { 
+            margin-top: 0; 
+            color: var(--primary-color); 
+            font-weight: 600; 
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+        #chart { 
+            max-width: 100%; 
+            height: auto;
+            border-radius: 8px; 
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+        #download-link {
+            display: inline-flex;
+            align-items: center;
+            padding: 12px 25px;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background-color 0.2s, transform 0.2s;
+            margin-top: 15px;
+        }
+        #download-link:hover {
+            background-color: var(--primary-hover-color);
+            transform: translateY(-1px);
+        }
+        #download-link i {
+            margin-right: 10px;
+            font-size: 20px;
+        }
+        
+        /* --- 动画效果 --- */
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="control-panel">
+            <div class="header-brand">
+                <img src="/static/changan_bank_logo.png" alt="长安银行 Logo" class="logo">
+                <h1><span class="brand-name">长策</span> - 智能风险分析平台</h1>
+            </div>
+            
+            <h2>分析指令</h2>
+            <textarea id="query-input" placeholder="请输入您的分析需求..."></textarea>
+            <button id="analyze-btn" onclick="startAnalysis()">开始分析</button>
+
+            
+            <div class="suggestions-section">
+                <h2>您可以这样问：</h2>
+                <div class="suggestions-grid">
+                    <a class="suggestion-item" onclick="setQuery(this)">
+                        <i class="ri-question-line"></i> 各分行逾期客户数量
+                    </a>
+                    <a class="suggestion-item" onclick="setQuery(this)">
+                        <i class="ri-bar-chart-2-line"></i> 产品类型贷款金额图表
+                    </a>
+                    <a class="suggestion-item" onclick="setQuery(this)">
+                        <i class="ri-file-list-3-line"></i> 导出30岁以下按揭逾期明细
+                    </a>
+                     <a class="suggestion-item" onclick="setQuery(this)">
+                        <i class="ri-calendar-line"></i> 分析12期以内逾期客户
+                    </a>
+                     <a class="suggestion-item" onclick="setQuery(this)">
+                        <i class="ri-money-cny-box-line"></i> 逾期贷款金额最多的产品
+                    </a>
+                     <a class="suggestion-item" onclick="setQuery(this)">
+                        <i class="ri-user-line"></i> 统计年龄分布
+                    </a>
+                </div>
+                <div class="subtle-actions">
+                    <button id="refresh-dashboard-btn" class="subtle-btn"><i class="ri-refresh-line"></i> 刷新数据</button>
+                    <button id="export-excel-btn" class="subtle-btn"><i class="ri-file-excel-2-line"></i> 导出报告</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="display-panel">
+            <div class="result-card welcome-card" id="welcome-container">
+                <i class="ri-lightbulb-fill welcome-lightbulb"></i> <h2>欢迎使用“<span class="brand-name">长策</span>”智能风险分析平台</h2>
+                <p>我是您的信贷后管理专家“长策”。您可以通过左侧的指令中心，使用自然语言向我提问，以对我行信贷数据进行深度分析与洞察。</p>
+                <p>您可以直接输入您关心的问题，或点击下方的建议进行快速体验。</p>
+            </div>
+
+            <div id="dashboard-card">
+                <h2 class="dashboard-title">全行对私贷款风险数据大盘</h2>
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <div class="label">全行总贷款余额</div>
+                        <div class="value" id="total_loan_balance">--</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="label">全行逾期总余额</div>
+                        <div class="value" id="total_overdue_balance">--</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="label">全行整体不良率</div>
+                        <div class="value" id="overall_npl_ratio">--</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="label">总逾期客户数</div>
+                        <div class="value" id="total_overdue_customers">--</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="label">总不良余额</div>
+                        <div class="value" id="total_npl_balance">--</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="label">全行总不良客户人数</div>
+                        <div class="value" id="total_npl_customers">--</div>
+                    </div>
+                </div>
+                <div class="chart-grid">
+                    <div class="chart-container-item">
+                        <h3>各分行不良率排行</h3>
+                        <div id="branch_npl_rank_chart" class="echart-instance"></div>
+                    </div>
+                    <div class="chart-container-item">
+                        <h3>资产质量结构</h3>
+                        <div class="asset-quality-table-container">
+                            <table class="asset-quality-table" id="asset_quality_table">
+                                <thead>
+                                    <tr>
+                                        <th>七级分类</th>
+                                        <th>总金额 (万元)</th>
+                                        <th>占比 (%)</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-grid">
+                    <div class="chart-container-item">
+                        <h3>各产品不良率排行</h3>
+                        <div id="product_npl_rank_chart" class="echart-instance"></div>
+                    </div>
+                    <div class="chart-container-item">
+                        <h3>各产品逾期金额分布</h3>
+                        <div id="product_overdue_balance_chart" class="echart-instance"></div>
+                    </div>
+                </div>
+                <div class="chart-grid">
+                    <div class="chart-container-item">
+                        <h3>逾期贷款逾期天数分布</h3>
+                        <div id="overdue_day_distribution_chart" class="echart-instance"></div>
+                    </div>
+                    <div class="chart-container-item">
+                        <h3>各年龄段风险表现</h3>
+                        <div id="age_risk_performance_chart" class="echart-instance"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="spinner" id="spinner"></div>
+            <div class="result-card" id="result-container"></div>
+            <div class="result-card" id="chart-container">
+                <h2>数据可视化图表</h2>
+                <img id="chart" src="" alt="分析图表">
+            </div>
+            <div class="result-card" id="download-container">
+                <h2>数据导出</h2>
+                <a id="download-link" href="" download="analysis_export.csv">
+                    <i class="ri-download-line"></i> 点击此处下载数据明细
+                </a>
+            </div>
+        </div>
+    </div>
+
+    
+
+    <script>
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const spinner = document.getElementById('spinner');
+        const welcomeContainer = document.getElementById('welcome-container');
+        const resultContainer = document.getElementById('result-container');
+        const chartContainer = document.getElementById('chart-container');
+        const chartImg = document.getElementById('chart');
+        const downloadContainer = document.getElementById('download-container');
+        const downloadLink = document.getElementById('download-link');
+        const queryInput = document.getElementById('query-input');
+
+        const totalLoanBalanceEl = document.getElementById('total_loan_balance');
+        const totalOverdueBalanceEl = document.getElementById('total_overdue_balance');
+        const overallNplRatioEl = document.getElementById('overall_npl_ratio');
+        const totalOverdueCustomersEl = document.getElementById('total_overdue_customers');
+        const totalNplBalanceEl = document.getElementById('total_npl_balance');
+        const totalNplCustomersEl = document.getElementById('total_npl_customers');
+        const assetQualityTableBody = document.querySelector('#asset_quality_table tbody');
+
+        const branchNplRankChartEl = echarts.init(document.getElementById('branch_npl_rank_chart'));
+        const productNplRankChartEl = echarts.init(document.getElementById('product_npl_rank_chart'));
+        const productOverdueBalanceChartEl = echarts.init(document.getElementById('product_overdue_balance_chart'));
+        const overdueDayDistributionChartEl = echarts.init(document.getElementById('overdue_day_distribution_chart'));
+        const ageRiskPerformanceChartEl = echarts.init(document.getElementById('age_risk_performance_chart'));
+
+        function setQuery(element) {
+            // 从点击的元素中获取文本，并去除可能存在的图标文字
+            let queryText = element.innerText.replace(/[\u{1F600}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}].*?\s*/ug, '').trim();
+            // 如果使用了 Remix Icon，需要进一步去除图标的 class 名称
+            queryText = queryText.replace(/^(ri-[a-z0-9-]+)\s*/i, '').trim();
+            queryInput.value = queryText;
+        }
+
+        async function startAnalysis() {
+            const query = queryInput.value;
+            if (!query.trim()) {
+                alert('请输入分析需求！');
+                return;
+            }
+            
+            welcomeContainer.style.display = 'none';
+            spinner.style.display = 'block';
+            resultContainer.style.display = 'none';
+            chartContainer.style.display = 'none';
+            downloadContainer.style.display = 'none';
+            analyzeBtn.disabled = true;
+            analyzeBtn.innerText = '正在分析中...';
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: query }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    if (data.analysis) {
+                        resultContainer.innerHTML = marked.parse(data.analysis);
+                        resultContainer.style.display = 'block';
+                    }
+                    if (data.image_path) {
+                        chartImg.src = data.image_path + '?t=' + new Date().getTime();
+                        chartContainer.style.display = 'block';
+                    }
+                    if (data.download_path) {
+                        downloadLink.href = data.download_path + '?t=' + new Date().getTime();
+                        downloadContainer.style.display = 'block';
+                    }
+                } else {
+                    resultContainer.innerHTML = `<h3>发生错误</h3><p>${data.error || '未知错误'}</p>`;
+                    resultContainer.style.display = 'block';
+                }
+            } catch (error) {
+                resultContainer.innerHTML = `<h3>请求失败</h3><p>请检查后台服务是否正常运行。</p>`;
+                resultContainer.style.display = 'block';
+            } finally {
+                spinner.style.display = 'none';
+                analyzeBtn.disabled = false;
+                analyzeBtn.innerText = '开始分析';
+            }
+        }
+
+        function loadDashboardData() {
+            fetch('/static/dashboard_data.json?t=' + new Date().getTime())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('HTTP ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    totalLoanBalanceEl.textContent = data.summary.total_loan_balance_wan.toLocaleString() + ' 万元';
+                    totalOverdueBalanceEl.textContent = data.summary.total_overdue_balance_wan.toLocaleString() + ' 万元';
+                    overallNplRatioEl.textContent = data.summary.overall_npl_ratio + '%';
+                    totalOverdueCustomersEl.textContent = data.summary.total_overdue_customers.toLocaleString() + ' 人';
+                    totalNplBalanceEl.textContent = data.summary.total_npl_balance_wan.toLocaleString() + ' 万元';
+                    totalNplCustomersEl.textContent = data.summary.total_npl_customers.toLocaleString() + ' 人';
+
+                    const sortedBranchData = (data.branch_npl_rank || []).slice().sort((a, b) => b.npl_ratio - a.npl_ratio);
+                    const branchNames = sortedBranchData.map(item => item.branch_name).reverse();
+                    const nplRatios = sortedBranchData.map(item => item.npl_ratio).reverse();
+                    branchNplRankChartEl.setOption({
+                        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: '{b}<br/>不良率: {c}%'} ,
+                        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                        xAxis: { type: 'value', name: '不良率(%)', axisLabel: { formatter: '{value}%'} },
+                        yAxis: { type: 'category', data: branchNames, axisLabel: { interval: 0 } },
+                        series: [{ name: '不良率', type: 'bar', data: nplRatios, itemStyle: { color: '#0d6efd' }, label: { show: true, position: 'right', formatter: p => p.value + '%', color: '#333' } }]
+                    });
+
+                    assetQualityTableBody.innerHTML = '';
+                    const sortedAssetQuality = (data.asset_quality_distribution || []).slice().sort((a, b) => {
+                        if (a.category === '正常') return 1;
+                        if (b.category === '正常') return -1;
+                        return 0;
+                    });
+                    sortedAssetQuality.forEach(item => {
+                        const row = assetQualityTableBody.insertRow();
+                        row.insertCell().textContent = item.category;
+                        const vWan = item.value_wan !== undefined && item.value_wan !== null ? Number(item.value_wan) : Number(item.value) / 10000;
+                        row.insertCell().textContent = vWan.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        row.insertCell().textContent = String(item.percentage) + '%';
+                    });
+
+                    const sortedProductNplData = (data.product_npl_rank || []).slice().sort((a, b) => b.npl_ratio - a.npl_ratio);
+                    const productNplNames = sortedProductNplData.map(item => item.product_name).reverse();
+                    const productNplRatios = sortedProductNplData.map(item => item.npl_ratio).reverse();
+                    productNplRankChartEl.setOption({
+                        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: '{b}<br/>不良率: {c}%'},
+                        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                        xAxis: { type: 'value', name: '不良率(%)', axisLabel: { formatter: '{value}%'} },
+                        yAxis: { type: 'category', data: productNplNames, axisLabel: { interval: 0 } },
+                        series: [{ name: '不良率', type: 'bar', data: productNplRatios, itemStyle: { color: '#fd7e14' }, label: { show: true, position: 'right', formatter: p => p.value + '%', color: '#333' } }]
+                    });
+
+                    const sortedProductOverdueData = (data.product_overdue_balance || []).slice().sort((a, b) => b.overdue_balance_wan - a.overdue_balance_wan);
+                    const productOverdueNames = sortedProductOverdueData.map(item => item.product_name).reverse();
+                    const productOverdueValues = sortedProductOverdueData.map(item => item.overdue_balance_wan).reverse();
+                    productOverdueBalanceChartEl.setOption({
+                        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: '{b}<br/>逾期金额: {c}万元' },
+                        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                        xAxis: { type: 'value', name: '逾期金额 (万元)', axisLabel: { formatter: '{value}万元' } },
+                        yAxis: { type: 'category', data: productOverdueNames, axisLabel: { interval: 0 } },
+                        series: [{ name: '逾期金额', type: 'bar', data: productOverdueValues, itemStyle: { color: '#dc3545' }, label: { show: true, position: 'right', formatter: p => p.value + '万元', color: '#333' } }]
+                    });
+
+                    const dayBuckets = (data.overdue_day_distribution || []).map(item => item.bucket);
+                    const dayOverdueAmounts = (data.overdue_day_distribution || []).map(item => item.overdue_balance_wan);
+                    const dayCustomerCounts = (data.overdue_day_distribution || []).map(item => item.customer_count);
+                    overdueDayDistributionChartEl.setOption({
+                        tooltip: { trigger: 'axis' },
+                        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                        xAxis: { type: 'category', data: dayBuckets },
+                        yAxis: [{ type: 'value', name: '逾期金额(万元)' }, { type: 'value', name: '客户数' }],
+                        series: [
+                            { name: '逾期金额(万元)', type: 'bar', data: dayOverdueAmounts, itemStyle: { color: '#6f42c1' }, label: { show: true, position: 'top', formatter: p => String(p.value) } },
+                            { name: '客户数', type: 'line', yAxisIndex: 1, data: dayCustomerCounts, smooth: true, itemStyle: { color: '#20c997' } }
+                        ]
+                    });
+
+                    const ageSegments = (data.age_risk_performance || []).map(item => item.age_segment);
+                    const ageNplRatios = (data.age_risk_performance || []).map(item => item.npl_ratio);
+                    const ageOverdueRatios = (data.age_risk_performance || []).map(item => item.overdue_ratio);
+                    ageRiskPerformanceChartEl.setOption({
+                        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                        xAxis: { type: 'category', data: ageSegments },
+                        yAxis: { type: 'value', name: '比例(%)', axisLabel: { formatter: '{value}%' } },
+                        series: [
+                            { name: '不良率', type: 'bar', stack: 'risk', data: ageNplRatios, itemStyle: { color: '#17a2b8' } },
+                            { name: '逾期率', type: 'bar', stack: 'risk', data: ageOverdueRatios, itemStyle: { color: '#ffc107' } }
+                        ]
+                    });
+
+                    window.addEventListener('resize', function() {
+                        branchNplRankChartEl.resize();
+                        productNplRankChartEl.resize();
+                        productOverdueBalanceChartEl.resize();
+                        overdueDayDistributionChartEl.resize();
+                        ageRiskPerformanceChartEl.resize();
+                    });
+                })
+                .catch(error => {
+                    const dashboardCardContent = document.getElementById('dashboard-card');
+                    if (dashboardCardContent) {
+                        dashboardCardContent.innerHTML = '<h2 class="dashboard-title" style="color: red;">数据大盘加载失败，请检查后端数据生成脚本或网络。</h2><p style="text-align: center;">错误详情: ' + error.message + '</p>';
+                    }
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboardData();
+        });
+
+        const refreshDashboardBtn = document.getElementById('refresh-dashboard-btn');
+        const exportExcelBtn = document.getElementById('export-excel-btn');
+        refreshDashboardBtn.addEventListener('click', function() {
+            refreshDashboardBtn.disabled = true;
+            const originalText = refreshDashboardBtn.textContent;
+            refreshDashboardBtn.textContent = '刷新中...';
+            fetch('/refresh_dashboard', { method: 'POST' })
+                .then(res => res.json())
+                .then(resp => {
+                    loadDashboardData();
+                    refreshDashboardBtn.disabled = false;
+                    refreshDashboardBtn.textContent = originalText;
+                    alert(resp && resp.success ? '数据大盘已刷新' : ('刷新失败: ' + (resp && resp.error || '')));
+                })
+                .catch(err => {
+                    refreshDashboardBtn.disabled = false;
+                    refreshDashboardBtn.textContent = originalText;
+                    alert('刷新失败: ' + err.message);
+                });
+        });
+        exportExcelBtn.addEventListener('click', async function() {
+            try {
+                const resp = await fetch('/reports/generate_monthly_report', { method: 'POST', headers: { 'Content-Type': 'application/json' } }).then(r => r.json());
+                if (resp && resp.success && resp.download) {
+                    window.open(resp.download, '_blank');
+                } else {
+                    alert('导出Excel失败: ' + ((resp && resp.error) || ''));
+                }
+            } catch (e) {
+                alert('导出Excel失败: ' + e.message);
+            }
+        });
+    </script>
+</body>
+</html>
