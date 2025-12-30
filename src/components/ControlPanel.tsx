@@ -30,8 +30,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ onAnalyze, isAnalyzi
     return (
         <div className="control-panel">
             <div className="brand" onClick={onRefreshDashboard} style={{ cursor: 'pointer' }}>
-                <img src="/images/logo.png" alt="EdgeRisk" style={{ height: '32px', marginRight: '10px' }} />
-                <span>EdgeRisk Insight</span>
+                <span><span style={{ color: 'var(--brand-highlight-color)', fontWeight: 700 }}>长策</span> - 智能风险分析平台</span>
             </div>
 
             <div className="chat-window">
